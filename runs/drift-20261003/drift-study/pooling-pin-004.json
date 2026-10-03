@@ -1,0 +1,34 @@
+{
+  "pin": "pin-004 (step 4,592,778, model 30576a03bfdb722c)",
+  "protocol": "world 1-1, 20 eps, seed 2026, mario_ai_fceux.evaluate greedy + trace, --device cpu",
+  "launches": [
+    {
+      "eval_dir": "20261004-003750",
+      "wins": 16,
+      "episodes": 20,
+      "max_x_median": 3161,
+      "instrument": "48835a2 (NEW death-detection)",
+      "context": "quiet pass 00:37-00:47, 0% fceux+trainer CPU recorded"
+    },
+    {
+      "eval_dir": "20261004-015635",
+      "wins": 16,
+      "episodes": 20,
+      "max_x_median": 3161,
+      "instrument": "a32b1c1 (OLD)",
+      "context": "pooling launch 3, 01:56-02:05, one peer single-emulator eval concurrent (10.8% CPU)"
+    },
+    {
+      "eval_dir": "20261004-020552",
+      "wins": 16,
+      "episodes": 20,
+      "max_x_median": 3161,
+      "instrument": "48835a2 (NEW)",
+      "context": "pooling launch 4, 02:05-02:14, peer baseline sweep concurrent"
+    }
+  ],
+  "pooled": "48/60 = 80%, identical 16/20 per launch, median 3161 every launch",
+  "instrument_effect": "nil \u2014 NEW 16/20 twice, OLD 16/20 once; launches 1 vs 3 matched 13/20 episodes",
+  "determinism": "same pin + same seed give 13/20 identical (reason+max_x) episodes across launches \u2014 seeded, not per-episode deterministic",
+  "supersedes": "a130a81 message said 32/40 with third launch in flight; third landed 16/20"
+}

@@ -102,7 +102,9 @@ def cpu_context() -> tuple[str, float]:
                 continue
             cpu = float(parts[0])
             cmdtext = parts[1]
-            if "fceux" in cmdtext or "apex_train" in cmdtext:
+            if "drift_study" in cmdtext:
+                continue
+            if "fceux --gamegenie" in cmdtext or "mario_ai_fceux.apex_train" in cmdtext:
                 busy += cpu
             elif "multiprocessing.spawn" in cmdtext or "resource_tracker" in cmdtext:
                 third += cpu
@@ -169,10 +171,11 @@ def main() -> None:
             raise SystemExit("no pins found - run --phase windows first")
         points.sort(key=lambda m: (m.get("step") is None, m.get("step") or 0))
 
-    procs = subprocess.run(["pgrep", "-f", "apex_train|mario_ai_fceux.evaluate|[f]ceux"],
+    procs = subprocess.run(["pgrep", "-f", "mario_ai_fceux[.]apex_train|mario_ai_fceux[.]evaluate"],
                            capture_output=True, text=True).stdout.split()
-    if procs:
-        raise SystemExit(f"refusing to eval while {len(procs)} training/eval/emulator processes run: {procs}")
+    emus = subprocess.run(["pgrep", "-x", "fceux"], capture_output=True, text=True).stdout.split()
+    if procs or emus:
+        raise SystemExit(f"refusing to eval while {len(procs) + len(emus)} training/eval/emulator processes run: {procs + emus}")
     ctx, busy = cpu_context()
     if busy > 2.0:
         raise SystemExit(f"refusing to eval: {ctx} (need ~0 for an uncontaminated pass)")

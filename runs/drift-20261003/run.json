@@ -1,0 +1,81 @@
+{
+  "algorithm": "Ape-X Rainbow (C51 + NoisyNet + Double DQN + Dueling + PER + N-step)",
+  "architecture": "distributed_async",
+  "training_actors": 8,
+  "eval_actor": 1,
+  "evaluation_enabled": false,
+  "worlds": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2
+  ],
+  "cheats_enabled_workers": [],
+  "alternate_cheat_campaigns": false,
+  "repeat_level_on_victory": false,
+  "window_layout": "config/fceux-window-layout.ini",
+  "replay_capacity": 500000,
+  "exploration": {
+    "actors": "Ape-X epsilon-greedy only; actor networks run in eval mode",
+    "learner": "NoisyNet remains active in Rainbow learner updates",
+    "action_priors": "none"
+  },
+  "actor_epsilons": [
+    0.4,
+    0.19884,
+    0.09884,
+    0.04913,
+    0.02442,
+    0.01214,
+    0.00604,
+    0.003
+  ],
+  "unsolved_epsilon_floor": 0.1,
+  "exploration_schedule": "Per-level epsilon floor until that actor wins the level",
+  "frontier_curriculum": {
+    "strategy": "grounded savestate checkpoints with bounded retries",
+    "spacing_pixels": 128,
+    "retries": 6
+  },
+  "enemy_separation_bonus": 0.0,
+  "stall_approach_penalty": 0.0,
+  "actor_seeds": [
+    7,
+    1007,
+    2007,
+    3007,
+    4007,
+    5007,
+    6007,
+    7007
+  ],
+  "experience_queue_max_batches": 10000,
+  "actor_batch_size": 32,
+  "weight_sync_every_optimizer_steps": 500,
+  "n_step": 3,
+  "batch_size": 128,
+  "seed": 7,
+  "evaluation_seed": 7,
+  "eval_world": 1,
+  "eval_episodes": 5,
+  "action_repeat_frames": [
+    6,
+    12,
+    24
+  ],
+  "action_count": 21,
+  "action_policy": "learned movement x 6/12/24-frame horizon; includes backward jump",
+  "start_protocol": "SMB1 clean selected-world start with course-start retries",
+  "determinism": "seeded components; asynchronous queue interleaving is not bitwise reproducible",
+  "torch_version": "2.13.0",
+  "numpy_version": "2.4.6",
+  "python_version": "3.12.1",
+  "source_revision": "fb65b07687d0762ddfcf1a9960b74687c74074ca",
+  "rom_sha256": "0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea",
+  "fceux_executable": "/opt/homebrew/Cellar/fceux/2.6.6_12/bin/fceux",
+  "fceux_sha256": "2d84a8310d530745263cfeadf00de9a631162a8dd76c71e1bed659c73753f2f6"
+}

@@ -36,4 +36,4 @@ jobs:
       - name: Run pytest on tests/python and tests/smb1_ppo
         run: |
           export PYTHONPATH="${{ github.workspace }}/python:$PYTHONPATH"
-          pytest tests/python tests/smb1_ppo -v --tb=short
+          python -m pytest tests/python tests/smb1_ppo -v --tb=short

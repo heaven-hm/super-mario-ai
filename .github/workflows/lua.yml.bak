@@ -15,7 +15,7 @@ jobs:
         run: sh tests/run.sh
       - name: Restrict RAM writes to documented testing aids
         run: |
-          count=$(grep -c 'memory\.writebyte(' mario_ai_neat.lua || true)
+          count=$(grep -c 'memory\.writebyte(' mario_ai_heaven.lua || true)
           if [ "$count" -ne 4 ]; then
             echo 'Only the three timer digits and lives byte may be written in testing mode.'
             exit 1

@@ -15,7 +15,7 @@ An AI that learns to play **Super Mario Bros. 1 for NES in FCEUX**. It uses NEAT
 ## Benchmark Results: SMB1 World 1-1 (20 episodes, greedy evaluation)
 
 This table compares the four learning methods on the same ROM, level start, and evaluation protocol.
-All metrics are from measured deterministic runs (no random seeds in evaluation; seed=2026 for reproducibility).
+**Note:** Benchmark results table is currently empty. Evaluation runs have not yet been executed per team decision to defer emulation testing (see Issue #3).
 
 | Learning Method | Best X | 1-1 Completion | Mean X | Mean Decisions | Mean Time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -171,7 +171,7 @@ Click the video thumbnail to watch SethBling's MarI/O video. MarI/O plays Super 
 - Scores each attempt for progress and survival, then evolves the population.
 - Saves learning in `mario_ai_neat.db` so later sessions can continue from the saved population.
 
-See [seven complete network diagrams from the included database](docs/best-networks.md), drawn from the actual saved connections.
+See [seven complete network diagrams from the database](docs/best-networks.md), drawn from the actual saved connections.
 
 The isolated acceleration experiment has a [technical plan](tasks/plan.md) and a [local FCEUX comparison guide](docs/acceleration-trial.md).
 
@@ -251,7 +251,7 @@ flowchart LR
 
 ### Resume training
 
-The included `mario_ai_neat.db` is a resumable population checkpoint. Keep it beside `mario_ai_neat.lua`, load the SMB1 ROM, then start the Lua script in FCEUX. It automatically loads the population and continues training. The script uses this exact filename; it does not automatically find `mario_ai_heaven_neat.db` or other database names.
+The `mario_ai_neat.db` file is a resumable population checkpoint (download from Release v1.0). Keep it beside `mario_ai_neat.lua`, load the SMB1 ROM, then start the Lua script in FCEUX. It automatically loads the population and continues training. The script uses this exact filename; it does not automatically find `mario_ai_heaven_neat.db` or other database names.
 
 If the log says `discarded unsafe training start`, the saved FCEUX slot was too close to a death. The AI leaves that slot, waits for Mario's normal respawn, and records a new start. It does not press Start or score that short failed attempt. If the game remains on a title or game-over screen, start the game manually; the AI never presses Start for you.
 
@@ -421,7 +421,7 @@ sh tests/run.sh
 Tests cover network evaluation, enemy sensors and safety, population persistence and evolution, FCEUX compatibility, and controller behavior. Tests do not prove that a trained genome can beat the game.
 
 - `mario_ai_neat.lua` — self-contained SMB1 AI, NEAT trainer, FCEUX loop, and persistence.
-- `mario_ai_neat.db` — included population checkpoint; keep it beside the Lua file to resume.
+- `mario_ai_neat.db` — population checkpoint (download from Release v1.0); keep it beside the Lua file to resume.
 - `docs/images/mario-ai-neat-training.png` — main FCEUX screenshot used above.
 - `docs/learning.md` — detailed training and persistence notes.
 - `docs/limitations.md` and `docs/ram-map.md` — known limitations and SMB1 memory references.

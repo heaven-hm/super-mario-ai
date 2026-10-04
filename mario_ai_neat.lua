@@ -2369,48 +2369,9 @@ function AI.abandonEpisode(aiState)
 end
 
 function AI.run()
--- world here avoids loading this file through dofile(), which cannot yield.
-local function startAtSelectedWorld(worldNumber)
-  assert(worldNumber>=1 and worldNumber<=8 and worldNumber%1==0,
-    "MARIO_AI_START_WORLD must be an integer from 1 to 8")
-  local selectedWorld=worldNumber-1
-  local startAttempts=0
-  for waitFrame=1,900 do
-    local operationMode=readByte(RAM.operation_mode)
-    local playerWorldX=readByte(RAM.player_page)*256+readByte(RAM.player_x)
-    if operationMode==1 and readByte(RAM.world_number)==selectedWorld
-      and readByte(RAM.level_number)==0 and readByte(RAM.player_state)==0x08
-      and playerWorldX<=LEVEL_START_MAX_X then
-      joypad.set(1,{})
-      memory.writebyte(0x076A,0) -- title world select otherwise enables hard mode
-      return
-    end
-    if operationMode==0 and startAttempts<3 and waitFrame%120==0 then
-      memory.writebyte(0x07FC,1) -- allow a selected world at the title screen
-      memory.writebyte(0x076B,selectedWorld)
-      memory.writebyte(RAM.world_number,selectedWorld)
-      memory.writebyte(RAM.level_number,0)
-      memory.writebyte(0x0760,0) -- first area in the selected world
-      memory.writebyte(0x0766,selectedWorld)
-      memory.writebyte(0x0767,0)
-      joypad.set(1,{start=true})
-      startAttempts=startAttempts+1
-    else
-      joypad.set(1,{})
-    end
-    emu.frameadvance()
-  end
-  error("Timed out waiting for SMB1 World "..worldNumber.."-1 to become playable")
-end
-
-function AI.run()
   assert(memory and memory.readbyte and joypad and joypad.set and emu and emu.frameadvance
     and emu.registerexit,
     "Load Mario AI NEAT in FCEUX with an NES SMB1 ROM open")
-  local selectedWorld=os.getenv("MARIO_AI_START_WORLD")
-  if selectedWorld and selectedWorld~="" then
-    startAtSelectedWorld(tonumber(selectedWorld) or -1)
-  end
   math.randomseed(os.time())
   local databasePath=getDatabasePath()
   local loaded=AI.load(databasePath)

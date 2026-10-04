@@ -15,7 +15,7 @@ An AI that learns to play **Super Mario Bros. 1 for NES in FCEUX**. It uses NEAT
 ## Benchmark Results: SMB1 World 1-1 (20 episodes, greedy evaluation)
 
 This table compares the four learning methods on the same ROM, level start, and evaluation protocol.
-**Note:** Benchmark results table is currently empty. Evaluation runs have not yet been executed per team decision to defer emulation testing (see Issue #3).
+**No benchmark measurements are published. Evaluation remains paused; the table values are intentionally blank.**
 
 | Learning Method | Best X | 1-1 Completion | Mean X | Mean Decisions | Mean Time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -195,7 +195,7 @@ better fit when parallel training and Python tooling matter more. MarI/O is the
 historical reference. There is not enough controlled data to say which learns
 faster or completes more often.
 
-## Download Pretrained Population
+## Download Pretrained Population — Training data snapshot: [Release v1.2 prerelease](https://github.com/heaven-hm/super-mario-ai/releases/tag/v1.2-training-data)
 
 The trained NEAT population and contextual Q-learning experience memory are published as a GitHub Release asset:
 

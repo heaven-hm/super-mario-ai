@@ -67,6 +67,19 @@
       "pool": "25/27 = 92.6%"
     },
     "blended_105_127": "82.7% is a PROTOCOL BLEND - do not cite as one policy's rate",
-    "pending": "CUSE-1's rule-OFF decomposition on the cloud VM (same seed/protocol, monkeypatched identity) separates rule effect from platform effect: rule-off ~16/20 => rule worth ~+25pp; ~19/20 => platform advantage real, rule adds little."
+    "pending": "CUSE-1's rule-OFF decomposition on the cloud VM (same seed/protocol, monkeypatched identity) separates rule effect from platform effect: rule-off ~16/20 => rule worth ~+25pp; ~19/20 => platform advantage real, rule adds little.",
+    "decomposition": {
+      "verdict": "reading (b): rule-OFF cloud = 19/20 (median 3161, single death x=2497) IDENTICAL outcome to rule-ON - pit_edge_commit is NEUTRAL at pin-004",
+      "trajectory_note": "rule changes trajectory not outcome: wins are 141-decision raw vs 147 with rule; rule-on deaths at 2023/2024 enemy wall, rule-off death at 2497",
+      "checkpoint_dependence": "pit_edge_commit transformative at weak checkpoints (765bac0a: 2370->2594 brake-park wall cleared) but quiet at the champion whose greedy path is already jump-happy at gap edges (1,813/2,795 decisions jump+run, no brake-parking)",
+      "rule": "selection rules earn their keep at weak checkpoints and go quiet at strong ones - measure at the pin you'll deploy",
+      "launch2_seed_2027": "running (pooled per >=2-launch rule)"
+    }
+  },
+  "per_platform": {
+    "note": "platform is a CONSISTENT OFFSET, not noise - report per-platform, never collapsed into one pool",
+    "mac_raw_greedy": "5x16/20 = 80/100 = 80% (suspiciously consistent)",
+    "cloud_raw_and_rule": "19/20 x2 rule-on + 19/20 rule-off (launch 2 pending) = ~38/40 = 95%",
+    "candidates": "FCEUX 2.6.5 Linux vs 2.6.6 Mac frame-boundary timing, Xvfb/Mesa vs native display, CPU-speed effects on bridge frame pacing - unverified, not a lever"
   }
 }

@@ -1,9 +1,5 @@
--- SMB1 RAM addresses, tile observation encoding, and state reading
-
-local memory = {}
-
--- SMB1 RAM addresses
-memory.RAM = {
+local function install(AI,C)
+local RAM = {
   game_engine_subroutine=0x000E, enemy_present=0x000F, enemy_id=0x0016,
   enemy_state=0x001E, player_page=0x006D, enemy_page=0x006E,
   player_x=0x0086, enemy_x=0x0087, player_vx=0x0057,
@@ -16,8 +12,7 @@ memory.RAM = {
   lives=0x075A,
 }
 
--- SMB1 enemy names by ID
-memory.ENEMY_NAME = {
+local ENEMY_NAME = {
   [0x00]="green koopa", [0x02]="buzzy beetle", [0x03]="red koopa",
   [0x05]="hammer bro", [0x06]="goomba", [0x07]="bloober",
   [0x08]="bullet bill", [0x09]="paratroopa", [0x0A]="cheep-cheep",
@@ -28,28 +23,18 @@ memory.ENEMY_NAME = {
   [0x33]="bullet bill",
 }
 
--- Tile encoding: which tiles are not solid
-memory.NON_SOLID_TILES = {[0x00]=true,[0x08]=true,[0x24]=true,[0x25]=true,[0x26]=true,
+local NON_SOLID_TILES = {[0x00]=true,[0x08]=true,[0x24]=true,[0x25]=true,[0x26]=true,
   [0x88]=true,[0xC2]=true,[0xC3]=true,[0xC5]=true}
-
--- Enemy states that are inactive (dead, in shell, etc)
-memory.INACTIVE_ENEMY_STATES = {[0x02]=true,[0x03]=true,[0x04]=true,[0x20]=true,[0x22]=true,
+local INACTIVE_ENEMY_STATES = {[0x02]=true,[0x03]=true,[0x04]=true,[0x20]=true,[0x22]=true,
   [0x23]=true,[0x83]=true,[0x84]=true,[0xC4]=true}
 
--- Enemies that cannot be defeated by jumping on them
-memory.NON_STOMPABLE_ENEMIES = {[0x07]=true,[0x0C]=true,[0x0D]=true,[0x11]=true,[0x12]=true}
+local function toSignedByte(value) return value >= 128 and value - 256 or value end
+local function clamp(value, low, high) return math.max(low, math.min(high, value)) end
 
-local function toSignedByte(value)
-  return value >= 128 and value - 256 or value
-end
+local function readByte(address) return memory.readbyte(address) end
 
-local function readByte(address)
-  return memory.readbyte and memory.readbyte(address) or 0
-end
-
--- Convert SMB1 RAM layout into one readable snapshot
-function memory.observe(frameNumber)
-  local RAM = memory.RAM
+-- Convert the SMB1 RAM layout into one readable snapshot for the learner.
+function AI.observe(frameNumber)
   local marioWorldX = readByte(RAM.player_page) * 256 + readByte(RAM.player_x)
   local operationMode = readByte(RAM.operation_mode)
   local playerState = readByte(RAM.game_engine_subroutine)
@@ -71,11 +56,14 @@ function memory.observe(frameNumber)
     state.phase = "locked"
   end
   -- SMB1's game engine uses 4 for flagpole slide and 5 for level end.
+  -- $010e/$070f are flagpole animation/collision bytes, not a victory flag.
+  -- https://gist.github.com/1wErt3r/4048722
   if operationMode == 1 and (playerState == 0x04 or playerState == 0x05) then
     state.phase = "victory"
   end
 
-  -- Read both metatile pages in one FCEUX call
+  -- Read both metatile pages in one FCEUX call. Keep zero-based tile indices
+  -- because the observation and collision code use the SMB1 RAM layout.
   local tileBytes=memory.readbyterange and memory.readbyterange(RAM.tiles,416)
   if type(tileBytes)=="string" and #tileBytes==416 then
     local tileValues={string.byte(tileBytes,1,416)}
@@ -83,14 +71,14 @@ function memory.observe(frameNumber)
   else
     for tileIndex=0,415 do state.tiles[tileIndex]=readByte(RAM.tiles+tileIndex) end
   end
-
+  state.grounded = AI.isGrounded(state)
   for enemySlot = 0, 4 do
     if readByte(RAM.enemy_present + enemySlot) ~= 0 then
       local enemyId = readByte(RAM.enemy_id + enemySlot)
       state.enemies[#state.enemies+1] = {
         slot=enemySlot,
         id=enemyId,
-        name=memory.ENEMY_NAME[enemyId] or "unknown object",
+        name=ENEMY_NAME[enemyId] or "unknown object",
         status=readByte(RAM.enemy_state + enemySlot),
         worldX=readByte(RAM.enemy_page + enemySlot)*256 + readByte(RAM.enemy_x + enemySlot),
         worldY=readByte(RAM.enemy_y + enemySlot)+24,
@@ -110,5 +98,11 @@ function memory.observe(frameNumber)
   end
   return state
 end
+AI.RAM=RAM
+AI.ENEMY_NAME=ENEMY_NAME
+AI.NON_SOLID_TILES=NON_SOLID_TILES
+AI.INACTIVE_ENEMY_STATES=INACTIVE_ENEMY_STATES
+AI.NON_STOMPABLE_ENEMIES=C.NON_STOMPABLE_ENEMIES
+end
 
-return memory
+return install

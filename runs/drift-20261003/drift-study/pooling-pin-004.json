@@ -80,6 +80,13 @@
     "note": "platform is a CONSISTENT OFFSET, not noise - report per-platform, never collapsed into one pool",
     "mac_raw_greedy": "5x16/20 = 80/100 = 80% (suspiciously consistent)",
     "cloud_raw_and_rule": "19/20 x2 rule-on + 19/20 rule-off (launch 2 pending) = ~38/40 = 95%",
-    "candidates": "FCEUX 2.6.5 Linux vs 2.6.6 Mac frame-boundary timing, Xvfb/Mesa vs native display, CPU-speed effects on bridge frame pacing - unverified, not a lever"
+    "candidates": "FCEUX 2.6.5 Linux vs 2.6.6 Mac frame-boundary timing, Xvfb/Mesa vs native display, CPU-speed effects on bridge frame pacing - unverified, not a lever",
+    "cloud_raw_baseline": "38/40 pooled (seed 2026 19/20 min x=2497 + seed 2027 19/20 min x=2503), rule-off, raw path - the per-platform number beside Mac 80/100; platform offset holds ~+15pp"
+  },
+  "momentum_gate_twin_champion": {
+    "verdict": "INERT at the champion: 0 gate fires across 2,801 decisions (ON-1 seed 2026 19/20 identical to OFF), widened gate cols 7/8/9 with gate_dist_px logging",
+    "meaning": "the champion's greedy path never enters the gate precondition (grounded + no-gap + step-up + near-tie) - same shape as pit_edge_commit: inert at strong pins, where the wall is already solved",
+    "decisive_instrument": "lever-arm pin 765bac0a (the checkpoint that parks at 2594/2597 with brake-park signature) - CUSE-1 running 2x20 per arm there; predecessor stall-breaker managed only +3px at that wall",
+    "deployment_story": "gate arms at weak pins, goes quiet at the champion - both halves measured (champion inertness passed, wall effectiveness pending)"
   }
 }

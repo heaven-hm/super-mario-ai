@@ -117,3 +117,72 @@ def pit_edge_commit(q_values, selected: int) -> int:
     if max(values) - values[best_jump] > PIT_EDGE_JUMP_MARGIN:
         return selected
     return best_jump if selected // len(ACTION_DURATIONS) != 1 else selected
+
+
+# The 2594-2597 step-edge wall: the policy arrives WITHOUT approach momentum,
+# and forcing a jump from a dead stop wedges Mario against the step (CUSE-1's
+# stall-breaker probe measured +3px, all deaths stuck, Mario airborne at
+# spd=(0,0)). The fix is ordering, not bravery: carry speed into the step,
+# then commit the jump. Gate is grounded AND step-ahead AND no gap at the
+# PRE-JUMP state - gating on the decision state fires at grd=0 and recreates
+# the dead-stop jump (CUSE-1's probe-design trap).
+GRID_COLS = 13
+STATE_SPEED_X = 169
+STATE_GROUNDED = 171
+STATE_GAP_AHEAD = 182
+STEP_EDGE_SPEED_MIN = 0.35
+STEP_EDGE_JUMP_MARGIN = 0.35
+LOCOMOTION_BASES = (0, 5)  # run, walk
+
+
+def _solid_tile_ahead(state) -> bool:
+    """True when a solid tile sits 1-2 tiles ahead at chest/head height.
+
+    The bridge packs a 13x13 grid first (rows vertical -96..96 by 16, cols
+    horizontal -96..96 by 16, Mario at row 6 col 6). Cells are 1 solid, -1
+    enemy, 0 empty - only 1 counts as a step/wall here.
+    """
+    if len(state) < GRID_COLS * GRID_COLS:
+        raise ValueError("state too small for the solid grid")
+    for index in (6 * GRID_COLS + 7, 6 * GRID_COLS + 8,
+                  5 * GRID_COLS + 7, 5 * GRID_COLS + 8):
+        if int(round(float(state[index]))) == 1:
+            return True
+    return False
+
+
+def step_edge_momentum(state, q_values, selected: int) -> int:
+    """Order a step approach: run into it, jump through it with speed.
+
+    Two arms, both narrow constraints rather than a replacement policy:
+    - speed below STEP_EDGE_SPEED_MIN: mask to forward locomotion so the
+      policy cannot brake/roll/backtrack/jump-from-stop before the step;
+    - speed at or above the minimum: promote a near-tied jump+run, exactly
+      like pit_edge_commit's margin rule.
+    At a gap edge this defers entirely to pit_edge_commit (gap gate).
+    """
+    values = [float(value) for value in q_values]
+    if len(values) != ACTION_COUNT:
+        raise ValueError(f"expected {ACTION_COUNT} Q values, got {len(values)}")
+    if not 0 <= selected < ACTION_COUNT:
+        raise ValueError(f"invalid SMB1 action: {selected}")
+    if len(state) < GRID_COLS * GRID_COLS + 15:
+        raise ValueError(f"expected {GRID_COLS * GRID_COLS + 15}-dim state, got {len(state)}")
+    if int(round(float(state[STATE_GROUNDED]))) <= 0:
+        return selected
+    if int(round(float(state[STATE_GAP_AHEAD]))) > 0:
+        return selected
+    if not _solid_tile_ahead(state):
+        return selected
+    speed = float(state[STATE_SPEED_X])
+    if speed < STEP_EDGE_SPEED_MIN:
+        masked = [value if index // len(ACTION_DURATIONS) in LOCOMOTION_BASES
+                  else float("-inf") for index, value in enumerate(values)]
+        return greedy_action(masked)
+    best_jump = max((encode_action(1, duration_index)
+                     for duration_index in range(len(ACTION_DURATIONS))),
+                    key=lambda index: values[index])
+    if max(values) - values[best_jump] > STEP_EDGE_JUMP_MARGIN:
+        return selected
+    return best_jump if selected // len(ACTION_DURATIONS) != 1 else selected
+

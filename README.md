@@ -170,6 +170,23 @@ better fit when parallel training and Python tooling matter more. MarI/O is the
 historical reference. There is not enough controlled data to say which learns
 faster or completes more often.
 
+## Download Pretrained Population
+
+The trained NEAT population and contextual Q-learning experience memory are published as a GitHub Release asset:
+
+- **Download:** [mario_ai_neat.db from Release v1.0](https://github.com/heaven-hm/super-mario-ai/releases/download/v1.0/mario_ai_neat.db) (~1.1 MB)
+- **Contents:** 500k+ transitions in Q-memory, evolved NEAT genomes, and evaluation baseline
+- **Optional:** Training without a pretrained database is supported; the script creates a new one on first save
+
+To use the pretrained population:
+1. Download `mario_ai_neat.db` from the Release link above and place it in the repository root (same folder as `mario_ai_neat.lua`)
+2. Open SMB1 in FCEUX
+3. Load `mario_ai_neat.lua` from FCEUX's Lua script menu
+4. The script automatically finds and loads the adjacent database
+5. Set `PLAY_CHAMPION_ONLY = false` to continue training, or `true` to replay the best evolved genome
+
+To start fresh without the pretrained database, simply omit `mario_ai_neat.db`—the script will create a new one on the first save.
+
 ## Start playing and training
 
 1. Open a compatible **Super Mario Bros. 1 NES ROM** in FCEUX. The ROM is not included.

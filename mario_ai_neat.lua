@@ -4,6 +4,17 @@
 
 local AI = {}
 
+
+-- Load modular components
+local smb1_memory = require("scripts.smb1.memory")
+local neat_genome = require("scripts.neat.genome")
+local neat_mutation = require("scripts.neat.mutation")
+local neat_species = require("scripts.neat.species")
+local neat_observation = require("scripts.neat.observation")
+local neat_population = require("scripts.neat.population")
+local q_memory = require("scripts.qmemory")
+local hud_graphics = require("scripts.hud")
+local persistence = require("scripts.storage")
 -- Keep game rules intact. Training resets with a savestate after an attempt.
 local SET_TIMER_TO_999_PER_EPISODE = false
 local TESTING_INFINITE_LIVES = false

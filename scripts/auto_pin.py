@@ -54,7 +54,7 @@ def pin_boundary(run_dir: Path, pin_root: Path, boundary: int, transitions: int,
         "transitions_at_pin": transitions,
         "step": read_step(pin_dir / "model.pt"),
         "model_sha": sha16(pin_dir / "model.pt"),
-        "replay_sha": sha16(pin_dir / "replay.npz"),
+        "replay_sha": sha16(pin_dir / "replay.npz") if (pin_dir / "replay.npz").exists() else None,
         "pinned_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "pair": full_pair,
     }
@@ -118,7 +118,7 @@ def main() -> None:
                 print(json.dumps({"rebaselined": t, "skipped": len(pending)}), flush=True)
                 pending = []
             for b in pending:
-                if free_gib() < 2.0:
+                if free_gib() < 0.5:
                     print(json.dumps({"skipped_boundary": b, "reason": "low disk"}), flush=True)
                     state["last_pinned_boundary"] = b
                     continue

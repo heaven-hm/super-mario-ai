@@ -18,7 +18,7 @@ jobs:
       
       - name: Check RAM writes are restricted to testing aids
         run: |
-          count=$(grep -c 'memory\.writebyte(' mario_ai_neat.lua || true)
+          count=$(grep -c 'memory\.writebyte(' scripts/storage.lua || true)
           if [ "$count" -ne 4 ]; then
             echo "Error: Only 4 memory writes allowed (three timers + lives)"
             exit 1

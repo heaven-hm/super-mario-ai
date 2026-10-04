@@ -1,0 +1,49 @@
+{
+  "protocol": "twin, frozen weights, rule-on vs rule-off",
+  "points": [
+    {
+      "arm": "on",
+      "eval_dir": "20261004-071548",
+      "wins": 0,
+      "episodes": 20,
+      "max_x_mean": 852.4,
+      "max_x_median": 898,
+      "returncode": 0,
+      "stderr_tail": [],
+      "launch": 1
+    },
+    {
+      "arm": "off",
+      "eval_dir": "20261004-072733",
+      "wins": 16,
+      "episodes": 20,
+      "max_x_mean": 3028.6,
+      "max_x_median": 3161,
+      "returncode": 0,
+      "stderr_tail": [],
+      "launch": 1
+    },
+    {
+      "arm": "on",
+      "eval_dir": "20261004-073716",
+      "wins": 0,
+      "episodes": 20,
+      "max_x_mean": 867.6,
+      "max_x_median": 898,
+      "returncode": 0,
+      "stderr_tail": [],
+      "launch": 2
+    },
+    {
+      "arm": "off",
+      "eval_dir": "20261004-074631",
+      "wins": 16,
+      "episodes": 20,
+      "max_x_mean": 2904.8,
+      "max_x_median": 3161,
+      "returncode": 0,
+      "stderr_tail": [],
+      "launch": 2
+    }
+  ]
+}

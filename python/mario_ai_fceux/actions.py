@@ -119,6 +119,11 @@ def pit_edge_commit(q_values, selected: int) -> int:
     return best_jump if selected // len(ACTION_DURATIONS) != 1 else selected
 
 
+# MEASURED HARM 2026-10-04 (twin, pin-004, 2x20 per arm): this rule as gated is
+# 0/40 vs 32/40 rule-off - the _solid_tile_ahead gate is true at every pipe,
+# staircase and block, so the low-speed arm blocks jumping at every obstacle
+# (deaths at x~898, the first one). Keep default-off; a correct gate needs
+# step-up semantics (ground height ahead strictly higher than here).
 # The 2594-2597 step-edge wall: the policy arrives WITHOUT approach momentum,
 # and forcing a jump from a dead stop wedges Mario against the step (CUSE-1's
 # stall-breaker probe measured +3px, all deaths stuck, Mario airborne at

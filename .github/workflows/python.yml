@@ -1,0 +1,39 @@
+name: Python CI
+
+on:
+  push:
+    branches:
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r python/requirements.txt
+          pip install -r requirements-smb1-ppo-py312.txt
+      
+      - name: Run ruff check
+        run: ruff check
+      
+      - name: Run pytest on tests/python and tests/smb1_ppo
+        run: |
+          export PYTHONPATH="${{ github.workspace }}/python:$PYTHONPATH"
+          pytest tests/python tests/smb1_ppo -v --tb=short

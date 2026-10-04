@@ -1,5 +1,7 @@
 # Mario AI NEAT
 
+[![Python CI](https://github.com/heaven-hm/super-mario-ai/actions/workflows/python.yml/badge.svg)](https://github.com/heaven-hm/super-mario-ai/actions/workflows/python.yml)
+
 An AI that learns to play **Super Mario Bros. 1 for NES in FCEUX**. It uses NEAT to evolve a neural network that chooses Mario's actions over repeated attempts.
 
 > **Project scope:** SMB1 for NES, in FCEUX. The AI is based on SethBling's MarI/O learning approach for Super Mario World, adapted for this game and emulator.

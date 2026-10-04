@@ -37,10 +37,15 @@ def boundaries_crossed(last_pinned: int, transitions: int, every: int) -> list[i
     return out
 
 
-def pin_boundary(run_dir: Path, pin_root: Path, boundary: int, transitions: int) -> dict:
+def pin_boundary(run_dir: Path, pin_root: Path, boundary: int, transitions: int,
+                 full_pair: bool = True) -> dict:
     pin_dir = pin_root / f"auto-{time.strftime('%Y%m%d-%H%M%S')}-b{boundary}"
     pin_dir.mkdir(parents=True, exist_ok=True)
-    for name in ("replay.npz", "model.pt"):
+    # evaluate.py loads checkpoints with validate_replay=False, so a curve point
+    # needs only model.pt. Full pairs (for resume) are expensive (~25MB each);
+    # keep them sparse or a 25k cadence fills the volume.
+    names = ("replay.npz", "model.pt") if full_pair else ("model.pt",)
+    for name in names:
         shutil.copyfile(run_dir / name, pin_dir / name)
     meta = {
         "label": f"auto boundary pin at {boundary} transitions (live counter {transitions})",
@@ -51,6 +56,7 @@ def pin_boundary(run_dir: Path, pin_root: Path, boundary: int, transitions: int)
         "model_sha": sha16(pin_dir / "model.pt"),
         "replay_sha": sha16(pin_dir / "replay.npz"),
         "pinned_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "pair": full_pair,
     }
     (pin_dir / "pin.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
@@ -74,6 +80,9 @@ def main() -> None:
     p.add_argument("--pin-root", type=Path, required=True)
     p.add_argument("--every", type=int, default=25000)
     p.add_argument("--poll", type=int, default=60)
+    p.add_argument("--full-pair-every", type=int, default=4,
+                   help="Keep model+replay every Nth boundary; model-only in between "
+                        "(evaluate needs only the model; full pairs cost ~25MB each).")
     p.add_argument("--once", action="store_true", help="one pass, then exit (for tests/cron)")
     args = p.parse_args()
 
@@ -113,7 +122,8 @@ def main() -> None:
                     print(json.dumps({"skipped_boundary": b, "reason": "low disk"}), flush=True)
                     state["last_pinned_boundary"] = b
                     continue
-                meta = pin_boundary(args.run_dir, args.pin_root, b, t)
+                full = (b // args.every) % args.full_pair_every == 0
+                meta = pin_boundary(args.run_dir, args.pin_root, b, t, full_pair=full)
                 state["last_pinned_boundary"] = b
                 state_path.write_text(json.dumps(state), encoding="utf-8")
                 print(json.dumps({"pinned": meta["dir"], "boundary": b, "step": meta["step"]}), flush=True)

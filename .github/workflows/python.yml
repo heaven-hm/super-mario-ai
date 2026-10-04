@@ -30,6 +30,6 @@ jobs:
         run: python -m ruff check
       
       - name: Run pytest on tests/python and tests/smb1_ppo
-        run: python -m pytest tests/python tests/smb1_ppo -v --tb=short
+        run: python -m pytest tests/python -v --tb=short && python -m pytest tests/smb1_ppo -v --tb=short
         env:
           PYTHONPATH: ${{ github.workspace }}/python

@@ -9,14 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Install Lua 5.1
         run: sudo apt-get update && sudo apt-get install -y lua5.1
-      - name: Run syntax and behavior tests
+      
+      - name: Run tests
         run: sh tests/run.sh
-      - name: Restrict RAM writes to documented testing aids
+      
+      - name: Check RAM writes are restricted to testing aids
         run: |
           count=$(grep -c 'memory\.writebyte(' mario_ai_neat.lua || true)
           if [ "$count" -ne 4 ]; then
-            echo 'Only the three timer digits and lives byte may be written in testing mode.'
+            echo "Error: Only 4 memory writes allowed (three timers + lives)"
             exit 1
           fi

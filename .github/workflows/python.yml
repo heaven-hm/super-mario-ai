@@ -12,17 +12,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12"]
-    
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.12"
       
       - name: Install dependencies
         run: |
@@ -31,9 +27,9 @@ jobs:
           pip install -r requirements-smb1-ppo-py312.txt
       
       - name: Run ruff check
-        run: ruff check
+        run: python -m ruff check
       
       - name: Run pytest on tests/python and tests/smb1_ppo
-        run: |
-          export PYTHONPATH="${{ github.workspace }}/python:${PYTHONPATH:-}"
-          python -m pytest tests/python tests/smb1_ppo -v --tb=short
+        run: python -m pytest tests/python tests/smb1_ppo -v --tb=short
+        env:
+          PYTHONPATH: ${{ github.workspace }}/python

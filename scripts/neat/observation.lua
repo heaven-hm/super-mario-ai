@@ -1,15 +1,20 @@
--- Sensor grid observation and feature extraction for neural network input
-
-local observation = {}
-
-local memory = require("scripts.smb1.memory")
-local genome = require("scripts.neat.genome")
-
-local function clamp(value, low, high)
-  return math.max(low, math.min(high, value))
+local function install(AI,C)
+local SENSOR_RADIUS_TILES=C.SENSOR_RADIUS_TILES
+local GRID_WIDTH=C.GRID_WIDTH
+local GRID_INPUT_COUNT=C.GRID_INPUT_COUNT
+local GLOBAL_INPUT_COUNT=C.GLOBAL_INPUT_COUNT
+local OBSERVATION_INPUT_COUNT=C.OBSERVATION_INPUT_COUNT
+local NEURAL_INPUT_COUNT=C.NEURAL_INPUT_COUNT
+local clamp=C.clamp
+local RAM=AI.RAM
+local NON_SOLID_TILES=AI.NON_SOLID_TILES
+local INACTIVE_ENEMY_STATES=AI.INACTIVE_ENEMY_STATES
+function AI.sensorIndex(horizontalOffset, verticalOffset)
+  local columnIndex = math.floor((horizontalOffset + SENSOR_RADIUS_TILES * 16) / 16)
+  local rowIndex = math.floor((verticalOffset + SENSOR_RADIUS_TILES * 16) / 16)
+  return rowIndex * GRID_WIDTH + columnIndex + 1
 end
 
--- Check if a tile at relative offset is solid
 local function isSolidTileAtOffset(state, horizontalOffset, verticalOffset)
   local sampledWorldX = state.worldX + horizontalOffset
   local sampledWorldY = state.worldY + verticalOffset - 16
@@ -18,24 +23,25 @@ local function isSolidTileAtOffset(state, horizontalOffset, verticalOffset)
   if rowIndex < 0 or rowIndex >= 13 then return false end
   local tileIndex = (math.floor(columnIndex/16)%2)*208 + rowIndex*16 + columnIndex%16
   local tileId = state.tiles[tileIndex]
-  return tileId ~= nil and tileId ~= 0 and not memory.NON_SOLID_TILES[tileId]
+  return tileId ~= nil and tileId ~= 0 and not NON_SOLID_TILES[tileId]
 end
+AI.isSolidTileAtOffset=isSolidTileAtOffset
 
--- Check if Mario is grounded (feet on solid surface)
-function observation.isGrounded(state)
+-- Ground support is inferred from the feet and vertical speed. This gives the
+-- network a real landing signal without writing to SMB1 RAM.
+function AI.isGrounded(state)
   return state.verticalVelocity==0 and
     (isSolidTileAtOffset(state,-6,16) or isSolidTileAtOffset(state,6,16))
 end
 
--- Check if there is a gap ahead
 local function hasGapAhead(state)
   for horizontalOffset=16,64,16 do
     if not isSolidTileAtOffset(state,horizontalOffset,16) then return 1 end
   end
   return 0
 end
+AI.hasGapAhead=hasGapAhead
 
--- Encode one grid cell for sensor input
 local function encodeGridCell(state, horizontalOffset, verticalOffset)
   local sampledWorldX = state.worldX + horizontalOffset
   local sampledWorldY = state.worldY + verticalOffset - 16
@@ -45,10 +51,10 @@ local function encodeGridCell(state, horizontalOffset, verticalOffset)
   local pageIndex = math.floor(columnIndex / 16) % 2
   local columnWithinPage = columnIndex % 16
   local tileId = state.tiles[pageIndex * 208 + rowIndex * 16 + columnWithinPage]
-  local isOccupied = tileId ~= nil and tileId ~= 0 and not memory.NON_SOLID_TILES[tileId]
+  local isOccupied = tileId ~= nil and tileId ~= 0 and not NON_SOLID_TILES[tileId]
   local encodedValue = isOccupied and 1 or 0
   for _, enemy in ipairs(state.enemies) do
-    if not memory.INACTIVE_ENEMY_STATES[enemy.status]
+    if not INACTIVE_ENEMY_STATES[enemy.status]
       and math.abs(enemy.worldX - (state.worldX + horizontalOffset)) <= 8
       and math.abs(enemy.worldY - (state.worldY + verticalOffset)) <= 8 then
       encodedValue = -1
@@ -58,11 +64,10 @@ local function encodeGridCell(state, horizontalOffset, verticalOffset)
   return encodedValue
 end
 
--- Find nearest enemy
 local function findNearestEnemy(state)
   local nearestEnemy, nearestDistance
   for _, enemy in ipairs(state.enemies) do
-    if not memory.INACTIVE_ENEMY_STATES[enemy.status] then
+    if not INACTIVE_ENEMY_STATES[enemy.status] then
       local horizontalOffset, verticalOffset = enemy.worldX - state.worldX, enemy.worldY - state.worldY
       local weightedDistance = math.abs(horizontalOffset) + math.abs(verticalOffset) * 1.5
       if weightedDistance < 240 and (not nearestDistance or weightedDistance < nearestDistance) then
@@ -72,12 +77,13 @@ local function findNearestEnemy(state)
   end
   return nearestEnemy, nearestDistance
 end
+AI.findNearestEnemy=findNearestEnemy
 
--- Build the 183 observed values (bias node added separately during evaluation)
-function observation.build(state)
+-- Build the 184 observed values. AI.evaluateGenome adds the constant bias node.
+function AI.buildObservationInputs(state)
   local inputValues = {}
-  for verticalOffset=-genome.SENSOR_RADIUS_TILES*16,genome.SENSOR_RADIUS_TILES*16,16 do
-    for horizontalOffset=-genome.SENSOR_RADIUS_TILES*16,genome.SENSOR_RADIUS_TILES*16,16 do
+  for verticalOffset=-SENSOR_RADIUS_TILES*16,SENSOR_RADIUS_TILES*16,16 do
+    for horizontalOffset=-SENSOR_RADIUS_TILES*16,SENSOR_RADIUS_TILES*16,16 do
       inputValues[#inputValues+1] = encodeGridCell(state,horizontalOffset,verticalOffset)
     end
   end
@@ -116,5 +122,6 @@ function observation.build(state)
     and nearestEnemy.worldX-state.worldX<32 and 1 or 0
   return inputValues
 end
+end
 
-return observation
+return install

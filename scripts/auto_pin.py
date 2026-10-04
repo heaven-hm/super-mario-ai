@@ -56,6 +56,11 @@ def pin_boundary(run_dir: Path, pin_root: Path, boundary: int, transitions: int)
     return meta
 
 
+def free_gib() -> float:
+    import shutil as _sh
+    return _sh.disk_usage(str(Path.home())).free / 1024 / 1024 / 1024
+
+
 def transitions_now(run_dir: Path) -> int | None:
     try:
         return int(json.loads((run_dir / "learner_status.json").read_text())["transitions_received"])
@@ -76,16 +81,38 @@ def main() -> None:
     state = {}
     if state_path.exists():
         state = json.loads(state_path.read_text())
+    args.pin_root.mkdir(parents=True, exist_ok=True)
     if "last_pinned_boundary" not in state:
         t = transitions_now(args.run_dir)
-        state["last_pinned_boundary"] = t or 0
-        args.pin_root.mkdir(parents=True, exist_ok=True)
+        if t is None:
+            # learner_status.json not written yet (trainer still booting): do
+            # NOT base the boundary counter at 0 - that floods pins from
+            # boundary 0 to the live counter (~73 copies, 2.5GB, ENOSPC killed
+            # the trainer on 2026-10-04). Retry next poll instead.
+            if args.once:
+                return
+            time.sleep(args.poll)
+            return main_restart(p, args)
+        state["last_pinned_boundary"] = t
         state_path.write_text(json.dumps(state), encoding="utf-8")
 
     while True:
         t = transitions_now(args.run_dir)
         if t is not None:
-            for b in boundaries_crossed(state["last_pinned_boundary"], t, args.every):
+            pending = boundaries_crossed(state["last_pinned_boundary"], t, args.every)
+            if len(pending) > 2:
+                # Sanity guard: a live run never crosses >2 boundaries per poll
+                # (25k steps take minutes). More means the baseline drifted -
+                # re-baseline instead of pinning a backlog.
+                state["last_pinned_boundary"] = t - (t % args.every)
+                state_path.write_text(json.dumps(state), encoding="utf-8")
+                print(json.dumps({"rebaselined": t, "skipped": len(pending)}), flush=True)
+                pending = []
+            for b in pending:
+                if free_gib() < 2.0:
+                    print(json.dumps({"skipped_boundary": b, "reason": "low disk"}), flush=True)
+                    state["last_pinned_boundary"] = b
+                    continue
                 meta = pin_boundary(args.run_dir, args.pin_root, b, t)
                 state["last_pinned_boundary"] = b
                 state_path.write_text(json.dumps(state), encoding="utf-8")
@@ -93,6 +120,12 @@ def main() -> None:
         if args.once:
             return
         time.sleep(args.poll)
+
+
+def main_restart(p, args):
+    """Retry the state init after a poll (trainer may still be booting)."""
+    import argparse
+    return main()
 
 
 if __name__ == "__main__":

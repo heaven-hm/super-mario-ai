@@ -2368,7 +2368,7 @@ function AI.abandonEpisode(aiState)
   aiState.previousEpisodeState=nil
 end
 
--- FCEUX frameadvance must run in the top-level script coroutine. Selecting a
+function AI.run()
 -- world here avoids loading this file through dofile(), which cannot yield.
 local function startAtSelectedWorld(worldNumber)
   assert(worldNumber>=1 and worldNumber<=8 and worldNumber%1==0,

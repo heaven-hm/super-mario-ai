@@ -1,14 +1,12 @@
--- NEAT speciation, reproduction, and generational evolution
-
-local species = {}
-
-local genome_module = require("scripts.neat.genome")
-local mutation_module = require("scripts.neat.mutation")
-
-local SPECIES_DISTANCE_THRESHOLD = 1.0
-local MAX_STALE_GENERATIONS = 15
-
--- Calculate genetic distance between two genomes
+local function install(AI,C)
+local DEFAULT_POPULATION_SIZE=C.DEFAULT_POPULATION_SIZE
+local SPECIES_DISTANCE_THRESHOLD=C.SPECIES_DISTANCE_THRESHOLD
+local MAX_STALE_GENERATIONS=C.MAX_STALE_GENERATIONS
+local cloneGenome=AI.cloneGenome
+local genomeSignature=AI.genomeSignature
+local createEmptyGenome=AI.createEmptyGenome
+local createGene=AI.createGene
+local getInnovationNumber=AI.getInnovationNumber
 local function calculateGenomeDistance(firstGenome, secondGenome)
   local secondGenesByInnovation = {}
   for _, gene in ipairs(secondGenome.genes) do
@@ -32,14 +30,13 @@ local function calculateGenomeDistance(firstGenome, secondGenome)
   return 2*unmatchedGeneCount/genomeSize + 0.4*averageWeightDifference
 end
 
--- Assign each genome to a species based on genetic distance
-function species.assign(populationState)
+local function assignSpecies(populationState)
   local previousSpecies = populationState.species or {}
   local currentSpecies = {}
-  for _, gen in ipairs(populationState.genomes) do
+  for _, genome in ipairs(populationState.genomes) do
     local matchingSpecies
     for _, speciesGroup in ipairs(currentSpecies) do
-      if calculateGenomeDistance(gen,speciesGroup.representative)<SPECIES_DISTANCE_THRESHOLD then
+      if calculateGenomeDistance(genome,speciesGroup.representative)<SPECIES_DISTANCE_THRESHOLD then
         matchingSpecies=speciesGroup
         break
       end
@@ -47,7 +44,7 @@ function species.assign(populationState)
     if not matchingSpecies then
       local previousMatch
       for _, speciesGroup in ipairs(previousSpecies) do
-        if calculateGenomeDistance(gen,speciesGroup.representative)<SPECIES_DISTANCE_THRESHOLD then
+        if calculateGenomeDistance(genome,speciesGroup.representative)<SPECIES_DISTANCE_THRESHOLD then
           previousMatch=speciesGroup
           break
         end
@@ -55,65 +52,22 @@ function species.assign(populationState)
       matchingSpecies={id=previousMatch and previousMatch.id or (#currentSpecies+1),genomes={},
         topFitness=previousMatch and previousMatch.topFitness or 0,
         staleness=previousMatch and previousMatch.staleness or 0,
-        representative=genome_module.clone(gen)}
+        representative=cloneGenome(genome)}
       currentSpecies[#currentSpecies+1]=matchingSpecies
     end
-    matchingSpecies.genomes[#matchingSpecies.genomes+1]=gen
-    gen.species=matchingSpecies.id
+    matchingSpecies.genomes[#matchingSpecies.genomes+1]=genome
+    genome.species=matchingSpecies.id
   end
   populationState.species=currentSpecies
 end
 
--- Rank genomes and species by fitness
-local function rankSpecies(populationState)
-  table.sort(populationState.genomes,function(firstGenome,secondGenome)
-    return firstGenome.fitness > secondGenome.fitness
-  end)
-  for rank, gen in ipairs(populationState.genomes) do
-    gen.globalRank = #populationState.genomes-rank+1
-  end
-  local champion = populationState.genomes[1]
-  populationState.bestFitness = math.max(populationState.bestFitness or 0,
-    champion and champion.fitness or 0)
-  for _, speciesGroup in ipairs(populationState.species) do
-    table.sort(speciesGroup.genomes,function(firstGenome,secondGenome)
-      return firstGenome.fitness > secondGenome.fitness
-    end)
-    local topFitness = speciesGroup.genomes[1] and speciesGroup.genomes[1].fitness or 0
-    if topFitness > speciesGroup.topFitness then
-      speciesGroup.topFitness = topFitness
-      speciesGroup.staleness = 0
-    else
-      speciesGroup.staleness = (speciesGroup.staleness or 0)+1
-    end
-    local adjustedFitnessTotal = 0
-    for _, gen in ipairs(speciesGroup.genomes) do
-      gen.adjustedFitness = gen.globalRank/math.max(1,#speciesGroup.genomes)
-      adjustedFitnessTotal = adjustedFitnessTotal+gen.adjustedFitness
-    end
-    speciesGroup.averageFitness = adjustedFitnessTotal
-  end
-end
+-- Create one seeded SMB1 controller, then mutate clones until the requested
+-- population size is reached. The first genome provides a useful prior; NEAT
+-- is free to replace that prior during later generations.
 
--- Choose a species for breeding weighted by fitness
-local function chooseSpeciesForBreeding(speciesGroups)
-  local totalFitness = 0
-  for _, speciesGroup in ipairs(speciesGroups) do
-    totalFitness = totalFitness + math.max(0,speciesGroup.averageFitness or 0)
-  end
-  if totalFitness <= 0 then return speciesGroups[math.random(#speciesGroups)] end
-  local selectionPoint = math.random()*totalFitness
-  for _, speciesGroup in ipairs(speciesGroups) do
-    selectionPoint = selectionPoint-math.max(0,speciesGroup.averageFitness or 0)
-    if selectionPoint <= 0 then return speciesGroup end
-  end
-  return speciesGroups[#speciesGroups]
-end
-
--- Crossover two genomes
 local function crossover(first,second)
   if second.fitness > first.fitness then first, second = second, first end
-  local child = genome_module.create()
+  local child = createEmptyGenome()
   local secondGenesByInnovation = {}
   for _, gene in ipairs(second.genes) do
     secondGenesByInnovation[gene.innovation] = gene
@@ -135,13 +89,60 @@ local function crossover(first,second)
   return child
 end
 
--- Breed a child from a species
+local function rankSpecies(populationState)
+  table.sort(populationState.genomes,function(firstGenome,secondGenome)
+    return firstGenome.fitness > secondGenome.fitness
+  end)
+  for rank, genome in ipairs(populationState.genomes) do
+    genome.globalRank = #populationState.genomes-rank+1
+  end
+  local champion = populationState.genomes[1]
+  populationState.bestFitness = math.max(populationState.bestFitness or 0,
+    champion and champion.fitness or 0)
+  for _, speciesGroup in ipairs(populationState.species) do
+    table.sort(speciesGroup.genomes,function(firstGenome,secondGenome)
+      return firstGenome.fitness > secondGenome.fitness
+    end)
+    local topFitness = speciesGroup.genomes[1] and speciesGroup.genomes[1].fitness or 0
+    if topFitness > speciesGroup.topFitness then
+      speciesGroup.topFitness = topFitness
+      speciesGroup.staleness = 0
+    else
+      speciesGroup.staleness = (speciesGroup.staleness or 0)+1
+    end
+    local adjustedFitnessTotal = 0
+    for _, genome in ipairs(speciesGroup.genomes) do
+      genome.adjustedFitness = genome.globalRank/math.max(1,#speciesGroup.genomes)
+      adjustedFitnessTotal = adjustedFitnessTotal+genome.adjustedFitness
+    end
+    -- Adjusted fitness already divides each rank by species size. Summing it
+    -- gives the species one fair breeding weight; averaging would divide by
+    -- species size twice and overproduce one-member species.
+    speciesGroup.averageFitness = adjustedFitnessTotal
+  end
+end
+
+local function chooseSpeciesForBreeding(species)
+  local totalFitness = 0
+  for _, speciesGroup in ipairs(species) do
+    totalFitness = totalFitness + math.max(0,speciesGroup.averageFitness or 0)
+  end
+  if totalFitness <= 0 then return species[math.random(#species)] end
+  local selectionPoint = math.random()*totalFitness
+  for _, speciesGroup in ipairs(species) do
+    selectionPoint = selectionPoint-math.max(0,speciesGroup.averageFitness or 0)
+    if selectionPoint <= 0 then return speciesGroup end
+  end
+  return species[#species]
+end
+
 local function breedChild(group,populationState)
   local speciesMembers = group.genomes
   if #speciesMembers == 1 then
-    local child = genome_module.clone(speciesMembers[1])
+    local child = cloneGenome(speciesMembers[1])
     child.fitness, child.adjustedFitness = 0, 0
-    mutation_module.mutate(child,populationState)
+    -- A newly formed species must keep exploring rather than make exact copies.
+    AI.mutate(child,populationState)
     return child
   end
   local function selectParent()
@@ -152,20 +153,19 @@ local function breedChild(group,populationState)
   local firstParent = selectParent()
   local secondParent = selectParent()
   local child = math.random() < 0.75
-    and crossover(firstParent,secondParent) or genome_module.clone(firstParent)
+    and crossover(firstParent,secondParent) or cloneGenome(firstParent)
   child.fitness, child.adjustedFitness = 0, 0
-  mutation_module.mutate(child,populationState)
+  AI.mutate(child,populationState)
   return child
 end
 
--- Generate next generation via reproduction and mutation
-function species.nextGeneration(populationState)
+function AI.nextGeneration(populationState)
   rankSpecies(populationState)
   local champion = populationState.genomes[1]
   local historicChampion=populationState.topPerformers and populationState.topPerformers[1]
   if historicChampion and historicChampion.genome
     and (historicChampion.fitness or 0)>(champion.fitness or 0) then
-    champion=genome_module.clone(historicChampion.genome)
+    champion=cloneGenome(historicChampion.genome)
     champion.fitness=historicChampion.fitness
   end
   local survivingSpecies = {}
@@ -180,35 +180,36 @@ function species.nextGeneration(populationState)
   end
   if #survivingSpecies == 0 then
     survivingSpecies = {{id=1,genomes={champion},topFitness=champion.fitness,staleness=0,
-      representative=genome_module.clone(champion),averageFitness=1}}
+      representative=cloneGenome(champion),averageFitness=1}}
   end
   local nextPopulation = {generation=populationState.generation+1,
     nextInnovation=populationState.nextInnovation,innovations=populationState.innovations,
     nextHiddenNode=populationState.nextHiddenNode,splitHistory=populationState.splitHistory,
-    species=survivingSpecies,genomes={genome_module.clone(champion)},
+    species=survivingSpecies,genomes={cloneGenome(champion)},
     bestFitness=populationState.bestFitness,population=populationState.population,
     nextGenomeIndex=1,behaviorArchive=populationState.behaviorArchive or {},
     episodeHistory=populationState.episodeHistory or {},topPerformers=populationState.topPerformers or {},
     experienceMemory=populationState.experienceMemory or {},
     legacyLogImported=populationState.legacyLogImported or false}
-  local targetPopulationSize = populationState.population or 300
-  local activePolicies={[genome_module.signature(champion)]=true}
+  local targetPopulationSize = populationState.population or DEFAULT_POPULATION_SIZE
+  local activePolicies={[genomeSignature(champion)]=true}
   while #nextPopulation.genomes < targetPopulationSize do
     local speciesGroup = chooseSpeciesForBreeding(survivingSpecies)
     local child=breedChild(speciesGroup,nextPopulation)
-    local signature=genome_module.signature(child)
+    local signature=genomeSignature(child)
     local retryCount=0
     while activePolicies[signature] and retryCount<32 do
       child=breedChild(speciesGroup,nextPopulation)
-      signature=genome_module.signature(child)
+      signature=genomeSignature(child)
       retryCount=retryCount+1
     end
+    -- A fresh sparse genome is a final escape from a clone-heavy species.
     if activePolicies[signature] then
       retryCount=0
       repeat
-        child=genome_module.create()
-        mutation_module.mutate(child,nextPopulation)
-        signature=genome_module.signature(child)
+        child=AI.newGenome(nextPopulation)
+        AI.mutate(child,nextPopulation)
+        signature=genomeSignature(child)
         retryCount=retryCount+1
       until not activePolicies[signature] or retryCount>=128
     end
@@ -216,8 +217,11 @@ function species.nextGeneration(populationState)
     activePolicies[signature]=true
     nextPopulation.genomes[#nextPopulation.genomes+1]=child
   end
-  species.assign(nextPopulation)
+  assignSpecies(nextPopulation)
   return nextPopulation
 end
+AI.assignSpecies=assignSpecies
+AI.calculateGenomeDistance=calculateGenomeDistance
+end
 
-return species
+return install

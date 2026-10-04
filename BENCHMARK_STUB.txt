@@ -1,0 +1,25 @@
+
+## Benchmark Results: SMB1 World 1-1 (20 episodes, greedy evaluation)
+
+This table compares the four learning methods on the same ROM, level start, and evaluation protocol.
+All metrics are from measured deterministic runs (no random seeds in evaluation; seed=2026 for reproducibility).
+
+| Learning Method | Best X | 1-1 Completion | Mean X | Mean Decisions | Mean Time (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Lua NEAT + Q-Memory | — | — | — | — | — |
+| Ape-X Rainbow DQN | — | — | — | — | — |
+| Basic DDQN | — | — | — | — | — |
+| PPO | — | — | — | — | — |
+
+**Legend:**
+- **Best X**: Furthest position reached across 20 episodes (pixels)
+- **1-1 Completion**: Number of times Mario cleared level 1-1 (out of 20)
+- **Mean X**: Average maximum X position per episode
+- **Mean Decisions**: Average number of action choices per episode
+- **Mean Time**: Average wall-clock seconds per episode (emulation only)
+
+**Evaluation Protocol**: SMB1 title-screen world-selector clean start, seed=2026, 20 deterministic episodes, greedy (no exploration), 12-frame action repeat.
+
+**Best 1-1 Clear**: (GIF/video clip to be added)
+
+---

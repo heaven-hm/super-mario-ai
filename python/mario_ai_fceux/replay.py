@@ -73,12 +73,14 @@ class PrioritizedReplayBuffer:
 
     SUCCESS = "success"
     FRONTIER = "frontier"
+    CONTRAST = "contrast"
 
     def __init__(self, observation_size: int, capacity: int = 100_000,
                  alpha: float = 0.6, priority_epsilon: float = 1e-5,
                  seed: int = 0,
                  success_quota_per_level: int | None = None,
-                 frontier_window_per_level: int = 256) -> None:
+                 frontier_window_per_level: int = 256,
+                 contrast_quota_per_level: int | None = None) -> None:
         if observation_size < 1 or capacity < 1:
             raise ValueError("observation_size and replay capacity must be positive")
         if not 0.0 <= alpha <= 1.0 or priority_epsilon <= 0.0:
@@ -111,6 +113,8 @@ class PrioritizedReplayBuffer:
         self.success_quota_per_level = (success_quota_per_level if success_quota_per_level is not None
                                         else max(1, self.protected_limit // 4))
         self.frontier_window_per_level = frontier_window_per_level
+        self.contrast_quota_per_level = (contrast_quota_per_level if contrast_quota_per_level is not None
+                                        else max(1, self.protected_limit // 8))
         self.protected_tags: dict[int, tuple[tuple[int, int] | None, str]] = {}
         self.protected_buckets: dict[tuple[tuple[int, int] | None, str], deque[int]] = {}
 
@@ -126,6 +130,8 @@ class PrioritizedReplayBuffer:
             return self.protected_limit
         if kind == self.FRONTIER:
             return min(self.frontier_window_per_level, self.protected_limit)
+        if kind == self.CONTRAST:
+            return min(self.contrast_quota_per_level, self.protected_limit)
         return min(self.success_quota_per_level, self.protected_limit)
 
     def _unprotect(self, index: int) -> None:
@@ -262,6 +268,7 @@ class PrioritizedReplayBuffer:
                                 protected_limit=self.protected_limit,
                                 success_quota_per_level=self.success_quota_per_level,
                                 frontier_window_per_level=self.frontier_window_per_level,
+                                contrast_quota_per_level=self.contrast_quota_per_level,
                                 protected_order=np.asarray(self.protected_order, dtype=np.int64),
                                 protected_tags=np.asarray([self.protected_tags[index]
                                                            for index in self.protected_order],
@@ -284,7 +291,9 @@ class PrioritizedReplayBuffer:
                          success_quota_per_level=int(payload["success_quota_per_level"])
                          if "success_quota_per_level" in payload else None,
                          frontier_window_per_level=int(payload["frontier_window_per_level"])
-                         if "frontier_window_per_level" in payload else 256)
+                         if "frontier_window_per_level" in payload else 256,
+                         contrast_quota_per_level=int(payload["contrast_quota_per_level"])
+                         if "contrast_quota_per_level" in payload else None)
             buffer.size = int(payload["size"])
             buffer.position = int(payload["position"])
             buffer.max_priority = float(payload["max_priority"])

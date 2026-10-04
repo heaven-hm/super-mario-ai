@@ -185,6 +185,13 @@ def apex_learner_main(
                                kind=PrioritizedReplayBuffer.FRONTIER)
                 logger.info("Protected %d frontier recovery transitions from actor %d course %d-%d",
                             len(transitions), actor_id, world + 1, level + 1)
+            elif kind == "contrast":
+                _, actor_id, world, level, transitions = message
+                for transition in transitions:
+                    replay.add(transition, protect=True, level=(world, level),
+                               kind=PrioritizedReplayBuffer.CONTRAST)
+                logger.info("Protected %d contrast transitions from actor %d course %d-%d",
+                            len(transitions), actor_id, world + 1, level + 1)
 
         # --- Check coordinator status messages (non-blocking) ---
         try:
@@ -202,6 +209,8 @@ def apex_learner_main(
                                 PrioritizedReplayBuffer.SUCCESS),
                             "protected_frontier_transitions": replay.protected_count(
                                 PrioritizedReplayBuffer.FRONTIER),
+                            "protected_contrast_transitions": replay.protected_count(
+                                PrioritizedReplayBuffer.CONTRAST),
                             "transitions_received": agent.steps,
                             "epsilon": 0.0,
                             "latest_loss": last_loss,

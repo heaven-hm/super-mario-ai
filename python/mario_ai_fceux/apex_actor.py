@@ -23,7 +23,8 @@ import numpy as np
 import torch
 
 from .actions import (ACTION_COUNT, LEGACY_DURATION_FRAMES, decode_action,
-                      greedy_action, pit_edge_commit, safe_start_action)
+                      greedy_action, pit_edge_commit, safe_start_action,
+                      STATE_GAP_AHEAD, STATE_GROUNDED)
 from .environment import FileWorker, NoProgressTracker, Observation
 from .model import RainbowNetwork
 from .protocol import atomic_write_json, read_json
@@ -116,6 +117,15 @@ class ActorConfig:
     # agent keeps getting wrong; protect them so PER cannot evict them as low
     # priority. The learner bounds these per level.
     frontier_tail_transitions: int = 64
+    # Approach-discrimination contrast pairs (default-off lever): at episode
+    # end, protect the pit-edge decision contexts (grounded, gap-ahead) from
+    # BOTH winning and losing episodes as their own quota-limited kind. The
+    # two enemy-approach reward levers failed by teaching one approach
+    # behaviour generalized wrongly to pits; rehearsing pit-approach contexts
+    # as a distinct class (with their own sub-quota, never into the general
+    # protected set) is the training-signal version of that discrimination.
+    protect_contrast_pairs: bool = False
+    contrast_tail_transitions: int = 16
     # Enemy-clearance shaping, off by default so existing runs and checkpoints
     # are unaffected. When enabled it pays a small bonus for being vertically
     # separated from a nearby enemy ahead -- the stomp/jump-over mechanic the
@@ -299,6 +309,20 @@ def _publish_hud(worker: FileWorker, run_directory: str, observation: Observatio
     })
 
 
+def contrast_exemplars(transitions):
+    """Pit-edge approach contexts: grounded with a gap ahead.
+
+    The contrast-pair classifier. These are the decision contexts where the
+    policy must discriminate pit approach from ordinary movement - the class
+    both enemy-approach reward levers generalized wrongly across. Returned in
+    trajectory order; callers quota them as their own protected kind.
+    """
+    return [t for t in transitions
+            if len(t.state) > STATE_GAP_AHEAD
+            and float(t.state[STATE_GAP_AHEAD]) > 0
+            and float(t.state[STATE_GROUNDED]) > 0]
+
+
 def actor_main(
     actor_index: int,
     total_actors: int,
@@ -461,6 +485,12 @@ def actor_main(
             batch.extend(tail)
             episode_replay.extend(tail)
             _flush_batch()
+            if config.protect_contrast_pairs and episode_replay:
+                contrast = contrast_exemplars(episode_replay)
+                if contrast:
+                    experience_queue.put(("contrast", actor_index, observation.world,
+                                          observation.level,
+                                          contrast[-config.contrast_tail_transitions:]))
             if observation.reason == "victory" and episode_replay:
                 # Rehearse the complete n-step winning trajectory after its
                 # ordinary batch. The learner stores a bounded protected copy.

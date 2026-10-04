@@ -122,6 +122,9 @@ def parse_arguments() -> argparse.Namespace:
                         help="Reward for vertical separation from a close enemy (0 disables).")
     parser.add_argument("--stall-approach-penalty", type=float, default=0.0,
                         help="Charge for losing speed near a close enemy (0 disables).")
+    parser.add_argument("--protect-contrast-pairs", action="store_true", default=False,
+                        help="Protect pit-edge approach contexts (grounded, gap-ahead) from every "
+                             "episode as a third quota-limited kind (default off).")
     parser.add_argument("--queue-capacity", type=int, default=10_000,
                         help="Max batches in experience queue (backpressure).")
     parser.add_argument("--n-step", type=int, default=3)
@@ -430,6 +433,7 @@ def main() -> None:
         enemy_separation_bonus=args.enemy_separation_bonus,
         stall_approach_penalty=args.stall_approach_penalty,
         repeat_level_on_victory=args.repeat_level_on_victory,
+        protect_contrast_pairs=args.protect_contrast_pairs,
         seed=args.seed,
     )
 

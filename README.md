@@ -14,26 +14,34 @@ An AI that learns to play **Super Mario Bros. 1 for NES in FCEUX**. It uses NEAT
 
 ## Benchmark Results: SMB1 World 1-1 (20 episodes, greedy evaluation)
 
-This table compares the four learning methods on the same ROM, level start, and evaluation protocol.
-**No benchmark measurements are published. Evaluation remains paused; the table values are intentionally blank.**
+Measured results are published in [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md), which is
+regenerated offline from committed artifacts with `bash scripts/regenerate_benchmark_report.sh`.
+Methods with no committed measurement are marked **not measured** rather than given a
+zero-win rate. The table below reports only counts that exist in the repository.
 
-| Learning Method | Best X | 1-1 Completion | Mean X | Mean Decisions | Mean Time (s) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Lua NEAT + Q-Memory | — | — | — | — | — |
-| Ape-X Rainbow DQN | — | — | — | — | — |
-| Basic DDQN | — | — | — | — | — |
-| PPO | — | — | — | — | — |
+| Learning Method | 1-1 Completion | 95% Wilson CI | Sample | Best X | Mean decisions | Mean time (s) | Training wall-clock |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Ape-X Rainbow DQN (pin-004, raw greedy) | **80/100 (80%)** | 71.1%–86.7% | 5 × 20-episode launches, seed 2026 | — | — | — | not recorded |
+| Lua NEAT + contextual Q-memory | not measured | — | — | — | — | — | — |
+| Basic DDQN | not measured | — | — | — | — | — | — |
+| PPO | not measured | — | — | — | — | — | — |
 
-**Legend:**
-- **Best X**: Furthest position reached across 20 episodes (pixels)
-- **1-1 Completion**: Number of times Mario cleared level 1-1 (out of 20)
-- **Mean X**: Average maximum X position per episode
-- **Mean Decisions**: Average number of action choices per episode
-- **Mean Time**: Average wall-clock seconds per episode (emulation only)
+The Rainbow figure is the union of the three 16/20 Mac launches recorded in
+`runs/drift-20261003/drift-study/pooling-pin-004.json` and the two 16/20 rule-off
+launches in `runs/probe-momentum/momentum-probe.json`. It is an **archived aggregate**:
+the per-episode JSON is not checked in, so Best X, mean decisions and mean seconds
+cannot be recomputed from it. Cloud launches that used the `pit_edge_commit`
+selection path (19/20 and 6/7) are excluded because they are a different policy.
 
-**Evaluation Protocol**: SMB1 title-screen world-selector clean start, seed=2026, 20 deterministic episodes, greedy (no exploration), 12-frame action repeat.
+**Evaluation Protocol**: SMB1 title-screen world-selector clean start, seed=2026,
+20 episodes per launch, greedy/no-learning, action repeat 12 (evaluate.py),
+FCEUX 2.6.6_12, ROM SHA-256 `0b3d9e1f01ed1668205bab34d6c82b0e281456e137352e4f36a9b2cfa3b66dea`.
+Older 5-episode seed-7 evaluations (0/5 at earlier checkpoints) are listed separately in
+the full report; they are not substituted for the 20-episode protocol.
 
-**Best 1-1 Clear**: (GIF/video clip to be added)
+**Best 1-1 Clear clip**: not available. No full-clear GIF or video is committed in this
+repository, so none is embedded here. The exact blocker for recording a new one is
+documented in [BENCHMARK_RESULTS.md](BENCHMARK_RESULTS.md#interpretation-limits).
 
 ## Python parallel training
 

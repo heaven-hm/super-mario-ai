@@ -1,0 +1,19 @@
+{
+  "label": "Rainbow pin-004, all five raw-greedy Mac launches (combined)",
+  "protocol": "SMB1 World 1-1, 20 episodes each, seed 2026, mario_ai_fceux.evaluate greedy/no-learning, --device cpu, FCEUX 2.6.6_12 on MacBook",
+  "selection_path": "raw argmax greedy via mario_ai_fceux.evaluate; no safe_start, no pit_edge_commit",
+  "derived_by": "scripts/regenerate_benchmark_report.sh",
+  "derivation": "Union of the three launches listed in runs/drift-20261003/drift-study/pooling-pin-004.json:launches and the two rule-off launches listed in runs/probe-momentum/momentum-probe.json:points. The source files themselves report this as 'Mac x5 ... pool 80/100 = 80%'.",
+  "not_independent_of": [
+    "runs/drift-20261003/drift-study/pooling-pin-004.json",
+    "runs/probe-momentum/momentum-probe.json"
+  ],
+  "excluded_counts": "Cloud launches (19/20 complete, 6/7 partial) are excluded because pooling-pin-004.json records that they used the pit_edge_commit selection path, which is a different policy. Momentum rule-on arms (0/20 twice) are a different policy variant and are excluded.",
+  "launches": [
+    {"eval_dir": "20261004-003750", "wins": 16, "episodes": 20},
+    {"eval_dir": "20261004-015635", "wins": 16, "episodes": 20},
+    {"eval_dir": "20261004-020552", "wins": 16, "episodes": 20},
+    {"eval_dir": "20261004-071548 rule-off", "wins": 16, "episodes": 20},
+    {"eval_dir": "20261004-074631 rule-off", "wins": 16, "episodes": 20}
+  ]
+}
